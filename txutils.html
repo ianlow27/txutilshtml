@@ -13,23 +13,72 @@ github.com/ianlow27/txutilshtml
 <table style='width:95%;' border=0 cellspacing=0 cellpadding=0 >
 <tr>
 <td valign='top' style='width:69%;padding:0px;margin:0px;'>
-<textarea id='tx1' style='width:98%;'></textarea>
-</td>
+<textarea id='tx1' style='height:100px;width:98%;'></textarea> </td>
 <td valign='top' style='width:29%;padding:0px;margin:0px;'>
-<textarea id='tx2' style='width:95%;'></textarea>
+<textarea id='tx2' style='height:100px;width:95%;' placeholder=''></textarea>
 </tr>
 </td>
 </table>
-<button id='btn1' onclick='func1();'>Submit</button>
-<div id='dv1'>
+<button id='btn1' onclick='linesrgxjs();'>LinesRgxJs</button>
+<textarea id='txout' style='height:100px;width:95%;' placeholder=''></textarea>
 </div>
 <script>
+  let tx1 = document.getElementById('tx1'); 
+  let tx2 = document.getElementById('tx2'); 
+  let txout = document.getElementById('txout'); 
+  tx1.value =
+"Line 1\n\
+A: line a1 \n\
+line a2 line a3\n\
+line a4 line a5\n\
+B: line b1 \n\
+line b2 line b3\n\
+line b4 line b5\n\
+";
+  tx2.value = 
+    "\
+if lnmatch(^A:) then continue \n\
+elif lnmatch(^B:) then continue \n\
+else concat2prev\n\
+endif"; 
   document.getElementById('tx1').focus();
-  document.getElementById('dv1').innerHTML=
-    "<div style='background-color:#ffddbb;'>Output here!</div>";
 //--------------------------------------
-function func1(){
-  alert('inside func1');
+function linesrgxjs(){ 
+  let outstr="";
+  tx2.value = tx2.value 
+    .replace(/\n/g, " ")
+    .replace(/[\s\t]+/g, " ")
+    ;
+  let acmds = tx2.value.replace(/(if|elif|else|endif)/g, "xxx$1");
+  let atx2 = acmds.split(/xxx/);
+  let atx1 = tx1.value.split(/\n/);
+  for(let h=0; h<atx1.length; h++){
+    atx1[h] = atx1[h].trim()
+    if (atx1[h]=="") continue;
+    for(let i=0; i<atx2.length; i++){
+      atx2[i] = atx2[i].trim()
+      if (atx2[i]=="") continue;
+      atx2[i] = atx2[i].replace(/^elif /g, "if ");
+      atx2[i] = atx2[i].replace(/^else /g, "if lnmatch(.*) then ");
+      let regex = atx2[i]
+                   .replace(/if lnmatch\(/g, "")
+                   .replace(/\) then (.*)/g, "")
+                   ;
+      console.log(regex + "___" + atx1[h] + "__" + atx2[i]); //!!
+      let rgx = RegExp(regex);
+      if(atx1[h].match(rgx)){
+        if      (atx2[i].match(/ then continue/)){
+          outstr += "\n"+atx1[h];
+          break;
+        }else if(atx2[i].match(/ then concat2prev/)){
+          outstr += ""+atx1[h];
+          break;
+        }
+      }
+      
+    }//endfor i
+  }//endfor h
+  txout.value = outstr;
 }//endfunc
 //--------------------------------------
 </script>
